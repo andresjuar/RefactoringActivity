@@ -11,3 +11,7 @@ def test_domestic_shipping_quote_uses_billable_weight():
 
 def test_expedited_shipping_adds_surcharge():
     assert shipping_quote(2, 50, 40, 30, "MX", True) == 411.75
+
+
+def test_oversized_shipping_international_surcharge():
+    assert shipping_quote(5, 105, 40, 30, "FR", False) == 2057.0
