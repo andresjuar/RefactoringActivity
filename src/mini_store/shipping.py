@@ -1,5 +1,11 @@
 """Shipping quotation rules."""
 
+DESTINATION_RATES = {
+    "MX": (89.0, 18.0),
+    "US": (199.0, 42.0),
+}
+DEFAULT_RATE = (299.0, 65.0)
+
 
 def volumetric_weight(length_cm: float, width_cm: float, height_cm: float) -> float:
     return (length_cm * width_cm * height_cm) / 5000
@@ -25,22 +31,14 @@ def shipping_quote(
 ) -> float:
     billable = chargeable_weight(weight_kg, length_cm, width_cm, height_cm)
 
-    if destination_country == "MX":
-        base = 89.0
-        per_kg = 18.0
-    elif destination_country == "US":
-        base = 199.0
-        per_kg = 42.0
-    else:
-        base = 299.0
-        per_kg = 65.0
+    base, per_kg = DESTINATION_RATES.get(destination_country, DEFAULT_RATE)
 
     total = base + billable * per_kg
 
     if expedited:
         total *= 1.35
 
-    if length_cm > 100 or width_cm > 100 or height_cm > 100:
+    if any(dim > 100 for dim in (length_cm, width_cm, height_cm)):
         total += 120.0
 
     return round(total, 2)
