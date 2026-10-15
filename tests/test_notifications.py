@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
+import pytest
 
 from mini_store.notifications import NotificationService
 
@@ -96,3 +97,12 @@ def test_push_shipping_update_is_sent():
         "Order shipped",
         "Track order A-100: TRACK-123."
     )
+
+def test_unsupported_notification_channel_raises_error():
+    service = NotificationService(Mock(), Mock(), Mock())
+    customer = make_customer("telegram")
+
+    with pytest.raises(
+        ValueError, match="Unsupported notification channel"
+    ):
+        service.send_order_confirmation(customer, "A-100")
