@@ -14,7 +14,7 @@ def validate_checkout(
         return False, "cart is empty"
     if item_count > 50:
         return False, "too many items"
-    if subtotal <= 0:
+    if not subtotal > 0:
         return False, "subtotal must be positive"
     if country not in {"MX", "US"}:
         return False, "unsupported country"

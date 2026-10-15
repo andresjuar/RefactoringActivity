@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
+import pytest
+
 
 from mini_store.notifications import NotificationService
 
@@ -96,3 +98,49 @@ def test_push_shipping_update_is_sent():
         "Order shipped",
         "Track order A-100: TRACK-123."
     )
+    
+@pytest.mark.parametrize("channel", ["fax", "", "EMAIL", None])
+def test_order_confirmation_rejects_unsupported_channel(channel):
+    email, sms, push = Mock(), Mock(), Mock()
+    service = NotificationService(email, sms, push)
+
+    with pytest.raises(ValueError, match="Unsupported notification channel"):
+        service.send_order_confirmation(make_customer(channel), "A-100")
+
+    email.send.assert_not_called()
+    sms.send.assert_not_called()
+    push.send.assert_not_called()
+
+
+@pytest.mark.parametrize("channel", ["fax", "", "EMAIL", None])
+def test_shipping_update_rejects_unsupported_channel(channel):
+    email, sms, push = Mock(), Mock(), Mock()
+    service = NotificationService(email, sms, push)
+
+    with pytest.raises(ValueError, match="Unsupported notification channel"):
+        service.send_shipping_update(make_customer(channel), "A-100", "TRACK-9")
+
+    email.send.assert_not_called()
+    sms.send.assert_not_called()
+    push.send.assert_not_called()
+
+
+@pytest.mark.parametrize("channel", ["email", "sms", "push"])
+@pytest.mark.parametrize("method", ["confirmation", "shipping"])
+def test_only_the_preferred_channel_is_used(channel, method):
+    gateways = {"email": Mock(), "sms": Mock(), "push": Mock()}
+    service = NotificationService(
+        gateways["email"], gateways["sms"], gateways["push"]
+    )
+    customer = make_customer(channel)
+
+    if method == "confirmation":
+        service.send_order_confirmation(customer, "A-100")
+    else:
+        service.send_shipping_update(customer, "A-100", "TRACK-9")
+
+    for name, gateway in gateways.items():
+        if name == channel:
+            gateway.send.assert_called_once()
+        else:
+            gateway.send.assert_not_called()
